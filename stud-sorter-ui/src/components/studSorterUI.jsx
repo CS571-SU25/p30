@@ -20,7 +20,6 @@ export default function App() {
           </h1>
         </div>
       </div>
-
       {/* Navigation */}
       <div className="w-100 bg-secondary">
         <div className="container-fluid px-4">
@@ -48,7 +47,6 @@ export default function App() {
           </Nav>
         </div>
       </div>
-
       {/* Main Content */}
       <div style={{ flex: 1, minHeight: 0, display: "flex", width: "100vw" }}>
         {page === "sort" ? (

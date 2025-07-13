@@ -27,6 +27,10 @@ export default function PartInfo({ image, trigger, onNewPart, lastPartData }) {
             confidence: 0.790967,
             img_url: "https://storage.googleapis.com/brickognize-static/thumbnails-v2.16/part/98283/0.webp",
             bricklink_url: "https://www.bricklink.com/v2/catalog/catalogitem.page?P=98283",
+            bounding_box: {
+              left: 80, upper: 45, right: 240, lower: 170,
+              image_width: 320, image_height: 240,
+            }
           };
           onNewPart?.(mock);
           setError(null);
@@ -51,12 +55,13 @@ export default function PartInfo({ image, trigger, onNewPart, lastPartData }) {
           }
           const item = data.items[0];
           const result = {
-            id: item.id, // <-- use the id as part number
+            id: item.id,
             name: item.name,
             category: item.category,
             confidence: item.score,
             img_url: item.img_url,
             bricklink_url: item.external_sites?.[0]?.url,
+            bounding_box: data.bounding_box || item.bounding_box,
           };
           onNewPart?.(result);
           setError(null);

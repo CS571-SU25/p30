@@ -1,10 +1,73 @@
 import React, { useRef, useState, useEffect } from "react";
-import { Card, Button, Alert } from "react-bootstrap";
+import { Card, Button } from "react-bootstrap";
+
+// Helper for overlaying bounding box
+function BoundingBoxOverlay({ boundingBox, imageSrc }) {
+  const imgRef = useRef(null);
+  const [dims, setDims] = useState({ w: 1, h: 1 });
+
+  useEffect(() => {
+    if (!imgRef.current) return;
+    function updateDims() {
+      setDims({
+        w: imgRef.current.offsetWidth,
+        h: imgRef.current.offsetHeight,
+      });
+    }
+    updateDims();
+    window.addEventListener("resize", updateDims);
+    return () => window.removeEventListener("resize", updateDims);
+  }, [imageSrc]);
+
+  if (!boundingBox) return null;
+
+  const { left, upper, right, lower, image_width, image_height } = boundingBox;
+  const scaleX = dims.w / (image_width || 1);
+  const scaleY = dims.h / (image_height || 1);
+
+  const boxLeft = left * scaleX;
+  const boxTop = upper * scaleY;
+  const boxWidth = (right - left) * scaleX;
+  const boxHeight = (lower - upper) * scaleY;
+
+  return (
+    <>
+      <img
+        ref={imgRef}
+        src={imageSrc}
+        alt=""
+        style={{
+          visibility: "hidden",
+          position: "absolute",
+          top: 0, left: 0,
+          width: "100%",
+          height: "auto",
+          pointerEvents: "none"
+        }}
+        aria-hidden="true"
+      />
+      <div
+        style={{
+          position: "absolute",
+          left: boxLeft,
+          top: boxTop,
+          width: boxWidth,
+          height: boxHeight,
+          border: "3px solid #39FF14",
+          borderRadius: 8,
+          pointerEvents: "none",
+          boxSizing: "border-box",
+        }}
+      />
+    </>
+  );
+}
 
 export default function CameraCapture({
   onCapture,
   onFindPart,
   capturedImage,
+  boundingBox,
   showLiveFeedOnly,
   showCurrentImageOnly,
 }) {
@@ -20,6 +83,7 @@ export default function CameraCapture({
         stream.getTracks().forEach(track => track.stop());
       }
     };
+    // eslint-disable-next-line
   }, [stream]);
 
   useEffect(() => {
@@ -31,6 +95,7 @@ export default function CameraCapture({
       stream.getTracks().forEach(track => track.stop());
       setStream(null);
     }
+    // eslint-disable-next-line
   }, [showLiveFeedOnly, stream]);
 
   const handleStartCamera = async () => {
@@ -46,7 +111,6 @@ export default function CameraCapture({
   const handleStopCamera = () => {
     if (stream) stream.getTracks().forEach(track => track.stop());
     setStream(null);
-    onCapture && onCapture(null);
   };
 
   const handleCapture = () => {
@@ -93,14 +157,14 @@ export default function CameraCapture({
           </Button>
         )}
         {error && (
-          <Alert variant="danger" className="mt-3 w-100 text-center">{error}</Alert>
+          <div className="alert alert-danger mt-3 w-100 text-center">{error}</div>
         )}
         <canvas ref={canvasRef} style={{ display: "none" }} />
       </Card>
     );
   }
 
-  // CURRENT IMAGE ONLY
+  // CURRENT IMAGE ONLY + bounding box overlay
   if (showCurrentImageOnly && capturedImage) {
     return (
       <Card className="w-100 h-100" style={{ minHeight: 0, flex: 1 }}>
@@ -111,16 +175,32 @@ export default function CameraCapture({
           className="text-center d-flex flex-column justify-content-center align-items-center"
           style={{ height: "100%" }}
         >
-          <img
-            src={capturedImage}
-            alt="Captured"
-            className="img-fluid rounded mb-2 border"
+          <div
             style={{
-              maxHeight: "400px",
+              position: "relative",
+              display: "inline-block",
               width: "100%",
-              objectFit: "contain",
+              maxWidth: 400,
             }}
-          />
+          >
+            <img
+              src={capturedImage}
+              alt="Captured"
+              className="img-fluid rounded mb-2 border"
+              style={{
+                width: "100%",
+                objectFit: "contain",
+                display: "block",
+              }}
+            />
+            {/* Bounding box overlay */}
+            {boundingBox && (
+              <BoundingBoxOverlay
+                boundingBox={boundingBox}
+                imageSrc={capturedImage}
+              />
+            )}
+          </div>
           {onFindPart && (
             <Button variant="warning" className="mt-2" onClick={onFindPart}>
               Find Part

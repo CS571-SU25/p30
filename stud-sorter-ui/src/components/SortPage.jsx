@@ -22,8 +22,14 @@ export default function SortPage({
 
   const handleFindPart = () => setFindPartTrigger(t => t + 1);
 
+  // --- FIX: clear part data when new image captured ---
+  const handleCapture = (img) => {
+    setCapturedImage(img);
+    setLastPartData(null); // <-- Clear part data and bounding box
+  };
+
   const handleNewPart = (partData) => {
-    setSortedParts(prev => [...prev, partData]);
+    if (partData) setSortedParts(prev => [...prev, partData]);
     setLastPartData(partData);
   };
 
@@ -39,7 +45,7 @@ export default function SortPage({
         overflow: "hidden",
       }}
     >
-      {/* LEFT: Camera + Current Image takes 66% of screen */}
+      {/* LEFT: Camera + Current Image (66%) */}
       <div
         style={{
           flex: 2,
@@ -65,15 +71,16 @@ export default function SortPage({
           {/* Live camera feed */}
           <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
             <CameraCapture
-              onCapture={setCapturedImage}
+              onCapture={handleCapture}
               capturedImage={capturedImage}
               showLiveFeedOnly={true}
             />
           </div>
-          {/* Current image */}
+          {/* Current image with bounding box */}
           <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
             <CameraCapture
               capturedImage={capturedImage}
+              boundingBox={lastPartData?.bounding_box}
               onFindPart={handleFindPart}
               showCurrentImageOnly={true}
             />
@@ -81,7 +88,7 @@ export default function SortPage({
         </div>
       </div>
 
-      {/* RIGHT: Part Info takes 33% of screen */}
+      {/* RIGHT: Part Info (33%) */}
       <div
         style={{
           flex: 1,

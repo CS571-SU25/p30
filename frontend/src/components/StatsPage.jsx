@@ -21,6 +21,8 @@ export default function StatsPage({ sortedParts }) {
                 <th>Confidence</th>
                 <th>Image</th>
                 <th>Bricklink</th>
+                <th>LEGO Color</th>
+                <th>Color Swatch</th>
               </tr>
             </thead>
             <tbody>
@@ -47,6 +49,24 @@ export default function StatsPage({ sortedParts }) {
                         Bricklink
                       </a>
                     )}
+                  </td>
+                  <td>
+                    {part.lego_color} (ID: {part.lego_color_id})<br />
+                    RGB: [{part.lego_color_rgb?.join(", ")}]
+                  </td>
+                  <td>
+                    <span
+                      style={{
+                        background: part.hex || "#eee",
+                        display: "inline-block",
+                        width: 28,
+                        height: 28,
+                        border: "1px solid #333",
+                        borderRadius: "50%",
+                        verticalAlign: "middle",
+                      }}
+                      title={part.lego_color}
+                    />
                   </td>
                 </tr>
               ))}

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Card, Spinner, Alert, Image } from "react-bootstrap";
 
-// Toggle for mocking
+// Toggle for mock/dev
 const USE_MOCK_API = false;
 const API_URL = "https://api.brickognize.com/predict/";
 
@@ -9,72 +9,69 @@ export default function PartInfo({ image, trigger, onNewPart, lastPartData }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-
   useEffect(() => {
-    let cancelled = false;
-    if (image && trigger > 0) {
-      setLoading(true);
-      setError(null);
+    if (!image || trigger <= 0) return;
 
-      if (USE_MOCK_API) {
-        setTimeout(() => {
-          if (cancelled) return;
-          if (Math.random() > 0.2) {
-            const mock = {
-              id: "98283",
-              name: "Brick, Modified 1 x 2 with Masonry Profile",
-              category: "Brick, Modified",
-              confidence: 0.790967,
-              img_url: "https://storage.googleapis.com/brickognize-static/thumbnails-v2.16/part/98283/0.webp",
-              bricklink_url: "https://www.bricklink.com/v2/catalog/catalogitem.page?P=98283",
-            };
-            onNewPart?.(mock);
-            setError(null);
-          } else {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+
+    if (USE_MOCK_API) {
+      setTimeout(() => {
+        if (cancelled) return;
+        if (Math.random() > 0.2) {
+          const mock = {
+            id: "98283",
+            name: "Brick, Modified 1 x 2 with Masonry Profile",
+            category: "Brick, Modified",
+            confidence: 0.790967,
+            img_url: "https://storage.googleapis.com/brickognize-static/thumbnails-v2.16/part/98283/0.webp",
+            bricklink_url: "https://www.bricklink.com/v2/catalog/catalogitem.page?P=98283",
+          };
+          onNewPart?.(mock);
+          setError(null);
+        } else {
+          setError("Part not found.");
+          onNewPart?.(null);
+        }
+        setLoading(false);
+      }, 1200);
+    } else {
+      const form = new FormData();
+      form.append("query_image", dataURItoBlob(image), "capture.png");
+
+      fetch(API_URL, { method: "POST", body: form })
+        .then(async (res) => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const data = await res.json();
+          if (!data.items || data.items.length === 0) {
             setError("Part not found.");
             onNewPart?.(null);
+            return;
           }
-          setLoading(false);
-        }, 1200);
-      } else {
-        const form = new FormData();
-        form.append("query_image", dataURItoBlob(image), "capture.png");
-
-        fetch(API_URL, { method: "POST", body: form })
-          .then(async (res) => {
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const data = await res.json();
-            console.log(data)
-            if (!data.items || data.items.length === 0) {
-              setError("Part not found.");
-              onNewPart?.(null);
-              return;
-            }
-            const item = data.items[0];
-            const result = {
-              id: item.id,
-              name: item.name,
-              category: item.category,
-              confidence: item.score,
-              img_url: item.img_url,
-              bricklink_url: item.external_sites?.[0]?.url,
-            };
-            onNewPart?.(result);
-            setError(null);
-          })
-          .catch((err) => {
-            setError("Brickognize error: " + err.message);
-            onNewPart?.(null);
-          })
-          .finally(() => setLoading(false));
-      }
-    } else if (!image) {
-      setError(null);
-      setLoading(false);
+          const item = data.items[0];
+          const result = {
+            id: item.id, // <-- use the id as part number
+            name: item.name,
+            category: item.category,
+            confidence: item.score,
+            img_url: item.img_url,
+            bricklink_url: item.external_sites?.[0]?.url,
+          };
+          onNewPart?.(result);
+          setError(null);
+        })
+        .catch((err) => {
+          setError("Brickognize error: " + err.message);
+          onNewPart?.(null);
+        })
+        .finally(() => setLoading(false));
     }
+
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line
   }, [trigger]);
 
   function dataURItoBlob(dataURI) {
@@ -86,7 +83,6 @@ export default function PartInfo({ image, trigger, onNewPart, lastPartData }) {
     return new Blob([ab], { type: mimeString });
   }
 
-  // Use lastPartData as the display part
   return (
     <Card className="w-100 h-100">
       <Card.Header className="text-center">

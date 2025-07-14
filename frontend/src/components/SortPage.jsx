@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import CameraCapture from "./CameraCapture";
 import PartInfo from "./PartInfo";
+import BoundingBoxOverlay from "./BoundingBoxOverlay";
 import { Form, Button, Card } from "react-bootstrap";
 
-// Utility
+// Utility to convert dataURL to Blob
 function dataURItoBlob(dataURI) {
   const byteString = atob(dataURI.split(",")[1]);
   const mimeString = dataURI.split(",")[0].split(":")[1].split(";")[0];
@@ -157,10 +158,10 @@ export default function SortPage({
                 />
                 {/* Bounding box overlay */}
                 {lastPartData && lastPartData.bounding_box && (
-                  // Reuse your BoundingBoxOverlay component!
-                  <div style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",pointerEvents:"none"}}>
-                    {/* Place your BoundingBoxOverlay here, or copy the code directly */}
-                  </div>
+                  <BoundingBoxOverlay
+                    boundingBox={lastPartData.bounding_box}
+                    imageSrc={capturedImage}
+                  />
                 )}
               </div>
               <div className="d-flex justify-content-center gap-2 mt-3">

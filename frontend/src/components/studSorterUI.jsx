@@ -4,6 +4,7 @@ import StatsPage from "./StatsPage";
 import { Nav } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 import legoBrick from "../assets/lego_brick.png"
+import AutomatedSortPage from "./AutomatedSortPage";
 
 export default function App() {
   const [page, setPage] = useState("sort");
@@ -67,6 +68,16 @@ export default function App() {
             <Nav.Item>
               <Nav.Link
                 as="button"
+                className={`text-white fs-5 ${page === "auto" ? "fw-bold text-warning" : ""}`}
+                style={{ background: "none", border: "none", textAlign: "left" }}
+                onClick={() => setPage("auto")}
+              >
+                Auto Sort
+              </Nav.Link>
+            </Nav.Item>
+            <Nav.Item>
+              <Nav.Link
+                as="button"
                 className={`text-white fs-5 ${page === "stats" ? "fw-bold text-warning" : ""}`}
                 style={{ background: "none", border: "none", textAlign: "left" }}
                 onClick={() => setPage("stats")}
@@ -88,6 +99,8 @@ export default function App() {
             lastPartData={lastPartData}
             setLastPartData={setLastPartData}
           />
+        ) : page === "auto" ? (
+          <AutomatedSortPage />
         ) : (
           <StatsPage sortedParts={sortedParts} />
         )}

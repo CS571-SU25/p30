@@ -33,16 +33,7 @@ export default function PartInfo({ image, lastPartData, loading, error }) {
             <p><strong>Name:</strong> {partData.name}</p>
             <p><strong>Category:</strong> {partData.category}</p>
             <p><strong>Confidence:</strong> {Math.round(partData.confidence * 100)}%</p>
-            {partData.bricklink_url && (
-              <a
-                href={partData.bricklink_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-sm btn-outline-primary mt-2"
-              >
-                View on Bricklink
-              </a>
-            )}
+
             {/* Color info */}
             {partData.lego_color && (
               <div className="mt-3">
@@ -66,6 +57,16 @@ export default function PartInfo({ image, lastPartData, loading, error }) {
                   RGB: [{partData.lego_color_rgb?.join(", ")}]
                 </span>
               </div>
+            )}
+            {partData.bricklink_url && (
+              <a
+                href={partData.bricklink_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-sm btn-outline-primary mt-2"
+              >
+                View on Bricklink
+              </a>
             )}
           </div>
         )}

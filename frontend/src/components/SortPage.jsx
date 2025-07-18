@@ -3,6 +3,7 @@ import CameraCapture from "./CameraCapture";
 import PartInfo from "./PartInfo";
 import BoundingBoxOverlay from "./BoundingBoxOverlay";
 import { Form, Button, Card } from "react-bootstrap";
+import { BRICKOGNIZE_API_URL, BACKEND_API_URL } from "./general/constants";
 
 // Utility to convert dataURL to Blob
 function dataURItoBlob(dataURI) {
@@ -56,7 +57,7 @@ export default function SortPage({
         // --- BRICKOGNIZE ---
         const form1 = new FormData();
         form1.append("query_image", dataURItoBlob(capturedImage), "capture.png");
-        const resp1 = await fetch("https://api.brickognize.com/predict/", {
+        const resp1 = await fetch(`${BRICKOGNIZE_API_URL}/predict/`, {
           method: "POST",
           body: form1,
         });
@@ -84,7 +85,7 @@ export default function SortPage({
         form2.append("right", right);
         form2.append("lower", lower);
 
-        const resp2 = await fetch("http://localhost:5001/detect_color", {
+        const resp2 = await fetch(`${BACKEND_API_URL}/detect_color`, {
           method: "POST",
           body: form2,
         });
@@ -116,17 +117,18 @@ export default function SortPage({
         flex: 1, display: "flex", flexDirection: "column", padding: "24px", minWidth: 0,
         background: "#f8f9fa", borderRight: "1px solid #dee2e6", height: "100%"
       }}>
-        <div style={{ display: "flex", justifyContent: "flex-start", marginBottom: 16 }}>
-          <Form.Switch
+
+        <CameraCapture
+          onCapture={handleCapture}
+        />
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", marginBottom: 16, minHeight: 56}}>
+          <Form.Switch className="black-switch"
             id="autoFindSwitch"
             label="Auto Find Part"
             checked={autoFindPart}
             onChange={() => setAutoFindPart((val) => !val)}
           />
         </div>
-        <CameraCapture
-          onCapture={handleCapture}
-        />
       </div>
       {/* MIDDLE: Current Image Preview with bounding box and Find Part */}
       <div style={{

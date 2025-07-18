@@ -84,7 +84,7 @@ export default function CameraCapture({
           </Card.Body>
         </>
       ) : (
-        <Button variant="primary" className="mb-3 w-100" onClick={handleStartCamera}>
+        <Button variant="dark" className="mb-3 w-100" onClick={handleStartCamera}>
           Open Camera
         </Button>
       )}

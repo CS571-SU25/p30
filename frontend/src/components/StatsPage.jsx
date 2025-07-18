@@ -15,29 +15,49 @@ export default function StatsPage({ sortedParts }) {
             <thead>
               <tr>
                 <th>#</th>
-                <th>Part Number</th>
-                <th>Name</th>
-                <th>Category</th>
-                <th>Confidence</th>
                 <th>Image</th>
-                <th>Bricklink</th>
-                <th>LEGO Color</th>
+                <th>Name</th>
                 <th>Color Swatch</th>
+                <th>LEGO Color</th>
+                <th>Category</th>
+                <th>Part Number</th>
+                <th>Confidence</th>
+                <th>Bricklink</th>
               </tr>
             </thead>
             <tbody>
               {sortedParts.map((part, idx) => (
                 <tr key={idx}>
-                  <td>{idx + 1}</td>
-                  <td>{part.id}</td>
-                  <td>{part.name}</td>
-                  <td>{part.category}</td>
-                  <td>{Math.round(part.confidence * 100)}%</td>
-                  <td>
+                <td>{idx + 1}</td>
+                <td>
                     {part.img_url && (
                       <Image src={part.img_url} rounded style={{ maxHeight: 50 }} />
                     )}
                   </td>
+                <td>{part.name}</td>
+                  <td>
+                    <span
+                      style={{
+                        background: part.hex || "#eee",
+                        display: "inline-block",
+                        width: 28,
+                        height: 28,
+                        border: "1px solid #333",
+                        borderRadius: "50%",
+                        verticalAlign: "middle",
+                        horizontalAlign: "middle",
+                      }}
+                      title={part.lego_color}
+                    />
+                  </td>
+                <td>
+                    {part.lego_color} (ID: {part.lego_color_id})<br/>
+                    RGB: [{part.lego_color_rgb?.join(", ")}]
+                  </td>
+                <td>{part.category}</td>
+                  <td>{part.id}</td>
+                  <td>{Math.round(part.confidence * 100)}%</td>
+
                   <td>
                     {part.bricklink_url && (
                       <a
@@ -49,24 +69,6 @@ export default function StatsPage({ sortedParts }) {
                         Bricklink
                       </a>
                     )}
-                  </td>
-                  <td>
-                    {part.lego_color} (ID: {part.lego_color_id})<br />
-                    RGB: [{part.lego_color_rgb?.join(", ")}]
-                  </td>
-                  <td>
-                    <span
-                      style={{
-                        background: part.hex || "#eee",
-                        display: "inline-block",
-                        width: 28,
-                        height: 28,
-                        border: "1px solid #333",
-                        borderRadius: "50%",
-                        verticalAlign: "middle",
-                      }}
-                      title={part.lego_color}
-                    />
                   </td>
                 </tr>
               ))}

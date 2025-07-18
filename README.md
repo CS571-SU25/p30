@@ -6,10 +6,32 @@ Welcome to the MVP version of the **Stud Sorter UI**. This web interface is the 
 
 ## 🚀 MVP Goals
 
-- Access the user's webcam and capture a still image of a LEGO part. (If issues arise with this will use a another api for brick pictures)
+- Access the user's webcam and capture a still image of a LEGO part.
 - Send the image to the [Brickognize API](https://brickognize.com) for part identification.
 - Display the result, including part name, ID, and image.
 - Provide a clean, responsive UI that will later integrate with backend sorting logic.
-- Set the stage for future features like part categorization with Bricklink API.
 
 ---
+
+## Running App
+
+#### Clone Repo
+
+```bash
+git clone https://github.com/CS571-SU25/p30.git
+cd p30
+```
+
+#### Build Docker Image and Start Services
+```bash
+docker compose up --build
+```
+
+#### Accessing App
+Frontend: http://localhost:5173
+Backend: http://localhost:5001
+
+#### Stopping App
+```bash
+docker compose down
+```

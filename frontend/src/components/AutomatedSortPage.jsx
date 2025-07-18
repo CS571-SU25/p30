@@ -48,7 +48,7 @@ export default function AutomatedSortPage() {
           <Navbar.Brand as="h1" className="fs-3 mb-0">Automated Sorter</Navbar.Brand>
           <Nav className="ms-auto align-items-center">
             <Dropdown onSelect={setSelectedRecipe}>
-              <Dropdown.Toggle variant="outline-primary" id="dropdown-sort-method">
+              <Dropdown.Toggle variant="outline-dark" id="dropdown-sort-method">
                 {selectedRecipe ? selectedRecipe : "Select Sort Recipe"}
               </Dropdown.Toggle>
               <Dropdown.Menu>

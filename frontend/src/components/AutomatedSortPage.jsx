@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
@@ -8,37 +8,59 @@ import Dropdown from 'react-bootstrap/Dropdown';
 import Button from 'react-bootstrap/Button';
 import BinsVisualizer from "./BinsVisualizer";
 
-// Dummy bin data
-const binsData = [
-  { color: { name: null, hex: null }, category: 'Brick' },
-  { color: { name: 'Blue', hex: '#0055BF' }, category: 'Plate' },
-  { color: { name: 'Yellow', hex: '#F2CD37' }, category: 'Tile' },
-  { color: { name: 'Green', hex: '#237841' }, category: 'Slope' },
-  { color: { name: 'White', hex: '#FFFFFF' }, category: 'Brick' },
-  { color: { name: 'Black', hex: '#231F20' }, category: 'Technic' },
-  { color: { name: 'Orange', hex: '#F57F20' }, category: 'Brick' },
-  { color: { name: 'Dark Blue', hex: '#2032A0' }, category: 'Plate' },
-  { color: { name: 'Tan', hex: '#E4CD9E' }, category: 'Tile' },
-  { color: { name: 'Purple', hex: '#923978' }, category: 'Slope' },
-  { color: { name: 'Lime', hex: '#BBE90D' }, category: 'Technic' },
-  { color: { name: null, hex: null }, category: null }
-];
+
 
 export default function AutomatedSortPage() {
+  console.log("AutomatedSortPage mounted/rendered");
+    const [recipeNames, setRecipeNames] = useState([]);
+  const [selectedRecipe, setSelectedRecipe] = useState(null);
+  const [binsData, setBinsData] = useState(Array(12).fill({ color: null, category: null }));
+
+  useEffect(() => {
+    console.log("useEffect running");
+    fetch('/api/recipes/')
+      .then(res => res.json())
+      .then(names => {
+        setRecipeNames(names);
+        console.log("Recipe names from API:", names);
+        console.log("Ran");
+      })
+      .catch(() => setRecipeNames([]));
+  }, []);
+
+  // Fetch selected recipe data when selectedRecipe changes
+  useEffect(() => {
+    if (selectedRecipe) {
+      fetch(`/api/recipes/${selectedRecipe}`)
+        .then(res => res.json())
+        .then(data => setBinsData(data.bins || Array(12).fill({ color: null, category: null })))
+        .catch(() => setBinsData(Array(12).fill({ color: null, category: null })));
+    } else {
+      setBinsData(Array(12).fill({ color: null, category: null }));
+    }
+  }, [selectedRecipe]);
+
   return (
     <Container fluid className="py-3" aria-label="Automated Sorter Page">
       {/* Navbar / Controls Row */}
-      <Navbar bg="light" expand="md" className="mb-4 rounded shadow" style={{minHeight: '64px'}}>
+      <Navbar bg="light" expand="md" className="mb-4 rounded shadow" style={{ minHeight: '64px' }}>
         <Container fluid>
           <Navbar.Brand as="h1" className="fs-3 mb-0">Automated Sorter</Navbar.Brand>
           <Nav className="ms-auto align-items-center">
-            <Dropdown>
+            <Dropdown onSelect={setSelectedRecipe}>
               <Dropdown.Toggle variant="outline-primary" id="dropdown-sort-method">
-                Select Sort Recipe
+                {selectedRecipe ? selectedRecipe : "Select Sort Recipe"}
               </Dropdown.Toggle>
               <Dropdown.Menu>
-                {/* Add dropdown items here in the future */}
-                <Dropdown.Item disabled>No recipes yet</Dropdown.Item>
+                {recipeNames.length === 0 ? (
+                  <Dropdown.Item disabled>No recipes yet</Dropdown.Item>
+                ) : (
+                  recipeNames.map(name => (
+                    <Dropdown.Item key={name} eventKey={name}>
+                      {name}
+                    </Dropdown.Item>
+                  ))
+                )}
               </Dropdown.Menu>
             </Dropdown>
             <Button className="mx-2" variant="success" tabIndex={0} aria-label="Start sorting">
@@ -57,7 +79,7 @@ export default function AutomatedSortPage() {
         <Col md={4} sm={12}>
           <BinsVisualizer bins={binsData} />
         </Col>
-        
+
         {/* Placeholder for Current Image */}
         <Col md={4} sm={12}>
           <section aria-labelledby="current-image-heading" className="bg-light border rounded p-3 h-100">
@@ -74,7 +96,6 @@ export default function AutomatedSortPage() {
               }}
               aria-label="Image placeholder"
             >
-              {/* Will be replaced by actual camera image */}
               <span>Image preview will appear here</span>
             </div>
           </section>

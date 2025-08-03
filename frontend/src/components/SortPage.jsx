@@ -85,7 +85,7 @@ export default function SortPage({
         form2.append("right", right);
         form2.append("lower", lower);
 
-        const resp2 = await fetch(`${BACKEND_API_URL}/detect_color`, {
+        const resp2 = await fetch(`${BACKEND_API_URL}/api/detection/detect_color`, {
           method: "POST",
           body: form2,
         });

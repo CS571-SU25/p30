@@ -60,18 +60,15 @@ export default function AutomatedSortPage() {
               }
 
               const parsedPart = {
-                partNumber: part.id ?? "0000",
-                name: part.name ?? "Unknown",
-                category: part.category ?? "Unknown",
+                ...part,
                 confidence: part.score ? Math.round(part.score * 100) : null,
-                color: {
-                  name: data.part_info.lego_color ?? "Unknown",
-                  id: data.part_info.lego_color_id ?? -1,
-                  rgb: data.part_info.lego_color_rgb ?? [0, 0, 0]
-                }
+                img_url: part.img_url,
+                img_base64: data.part_info?.img_base64 ?? null,
+                lego_color: data.part_info?.lego_color ?? "Unknown",
+                lego_color_id: data.part_info?.lego_color_id ?? -1,
+                lego_color_rgb: data.part_info?.lego_color_rgb ?? [0, 0, 0]
               };
 
-              console.log("✅ Parsed Part Sent to PartInfo:", parsedPart);
               setLatestPartInfo(parsedPart);
               setError(null);
             }
@@ -94,7 +91,7 @@ export default function AutomatedSortPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         recipe: selectedRecipe,
-        video_source: "/app/tests/test_videos/test_video_0.mp4"
+        video_source: "/app/tests/test_videos/test_video_1.mp4"
       }),
     }).then(() => setIsSorting(true));
   };
@@ -105,7 +102,6 @@ export default function AutomatedSortPage() {
 
   return (
     <Container fluid className="py-3" aria-label="Automated Sorter Page">
-      {/* Navbar / Controls */}
       <Navbar bg="light" expand="md" className="mb-4 rounded shadow" style={{ minHeight: '64px' }}>
         <Container fluid>
           <Navbar.Brand as="h1" className="fs-3 mb-0">Automated Sorter</Navbar.Brand>
@@ -134,7 +130,6 @@ export default function AutomatedSortPage() {
         </Container>
       </Navbar>
 
-      {/* Main Grid */}
       <Row className="g-4">
         <Col md={4} sm={12}>
           <BinsVisualizer bins={binsData} />
@@ -155,8 +150,16 @@ export default function AutomatedSortPage() {
               }}
               aria-label="Image placeholder"
             >
-              {latestImageUrl ? (
-                <img src={latestImageUrl} alt="Detected Lego Piece" style={{ maxWidth: "100%", maxHeight: "220px", borderRadius: "8px" }} />
+              {latestImageUrl || latestPartInfo?.img_base64 ? (
+                <img
+                  src={
+                    latestPartInfo?.img_base64
+                      ? `data:image/jpeg;base64,${latestPartInfo.img_base64}`
+                      : latestImageUrl
+                  }
+                  alt="Detected Lego Piece"
+                  style={{ maxWidth: "100%", maxHeight: "220px", borderRadius: "8px" }}
+                />
               ) : (
                 <span>Image preview will appear here</span>
               )}

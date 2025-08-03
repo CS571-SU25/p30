@@ -17,7 +17,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 #     os.path.join(TEST_VIDEO_DIR, "test_video_1.mp4"),
 # ]
 video_paths = [
-    f"{TEST_VIDEO_DIR}/test_video_0.mp4",
+    # f"{TEST_VIDEO_DIR}/test_video_0.mp4",
     f"{TEST_VIDEO_DIR}/test_video_1.mp4",
 ]
 app.config["DETECTION_MANAGER"] = DetectionManager(

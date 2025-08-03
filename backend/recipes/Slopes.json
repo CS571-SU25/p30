@@ -1,0 +1,17 @@
+{
+  "name": "Slopes",
+  "bins": [
+    { "color": { "name": "Red", "hex": "#C91A09" }, "category": "Slope" },
+    { "color": { "name": "Blue", "hex": "#0055BF" }, "category": "Slope" },
+    { "color": { "name": "Yellow", "hex": "#F2CD37" }, "category": "Slope" },
+    { "color": { "name": "Green", "hex": "#237841" }, "category": "Slope" },
+    { "color": { "name": "White", "hex": "#FFFFFF" }, "category": "Slope" },
+    { "color": { "name": "Black", "hex": "#231F20" }, "category": "Slope" },
+    { "color": { "name": "Orange", "hex": "#F57F20" }, "category": "Slope" },
+    { "color": { "name": "Dark Blue", "hex": "#2032A0" }, "category": "Slope" },
+    { "color": { "name": "Tan", "hex": "#E4CD9E" }, "category": "Slope" },
+    { "color": { "name": "Purple", "hex": "#923978" }, "category": "Slope" },
+    { "color": { "name": "Lime", "hex": "#BBE90D" }, "category": "Slope" },
+    { "color": { "name": null, "hex": null }, "category": null }
+  ]
+}

@@ -2,3 +2,7 @@ flask
 flask-cors
 pillow
 numpy
+pytest
+opencv-python
+requests
+imageio

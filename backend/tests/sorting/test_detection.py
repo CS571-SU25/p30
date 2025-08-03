@@ -61,7 +61,7 @@ def test_detection_piece_centers(
     det = Detection(
         video_source=video_path,
         on_piece_detected=on_piece_detected,
-        debug=False,
+        debug=True,
     )
     det.start()
     det.thread.join()

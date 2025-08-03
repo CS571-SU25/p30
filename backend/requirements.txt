@@ -4,3 +4,5 @@ pillow
 numpy
 pytest
 opencv-python
+requests
+imageio

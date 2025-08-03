@@ -1,23 +1,10 @@
-from cv2 import (
-    VideoCapture,
-    resize,
-    imshow,
-    waitKey,
-    destroyWindow,
-    createBackgroundSubtractorMOG2,
-    getStructuringElement,
-    MORPH_RECT,
-    morphologyEx,
-    MORPH_OPEN,
-    findContours,
-    RETR_EXTERNAL,
-    CHAIN_APPROX_SIMPLE,
-    boundingRect,
-    rectangle,
-)
+import imageio.v3 as iio
+import cv2
 from threading import Thread, current_thread
 from logging import getLogger
 import numpy as np
+from os.path import exists
+import time
 
 from constants.general import (
     BRICK_DISTANCE_MARGIN,
@@ -29,24 +16,13 @@ from constants.general import (
     MOG2_SUBTRACTOR_VARIANCE_THRESHOLD,
     NOISE_REDUCTION_KERNEL_SIZE,
 )
-from util.vision import expand_bbox
+from util.vision import (
+    expand_bbox,
+    handle_detected_piece,
+)
 
 
 class Detection:
-    """
-    Description:
-        Automated Lego piece detection for conveyor-based sorting.
-        Handles video capture, background subtraction, noise filtering, and robust piece detection.
-        Designed for live camera or video file testing. When a Lego is fully in view, triggers callback with generous crop.
-
-    Parameters:
-        video_source (int | str): Camera index or path to video file.
-        on_piece_detected (Callable[[np.ndarray], None]): Callback for when a Lego piece is detected. Receives cropped frame.
-        preprocess (Callable[[np.ndarray], np.ndarray] | None): Optional preprocessing function (e.g., denoise).
-        debug (bool): If True, shows OpenCV debug windows with live mask and detection view.
-
-    """
-
     def __init__(
         self,
         video_source: int | str = 0,
@@ -59,163 +35,138 @@ class Detection:
         self.preprocess = preprocess
         self.debug = debug
         self.running = False
-        self.capture = None
+        self.reader = None
         self.thread = None
+        self.latest_result = None
         self.logger = getLogger("Detection")
 
-        # Detection parameters
         self.det_shape = DETECTION_FRAME_RESIZED_SHAPE
         self.margin = BRICK_DISTANCE_MARGIN
         self.area_thresh = MINIMUM_BRICK_SIZE_PIXELS
 
-        # Background subtraction setup
-        self.bg_subtractor = createBackgroundSubtractorMOG2(
+        self.bg_subtractor = cv2.createBackgroundSubtractorMOG2(
             history=MOG2_SUBTRACTOR_HISTORY,
             varThreshold=MOG2_SUBTRACTOR_VARIANCE_THRESHOLD,
             detectShadows=False,
         )
-        self.kernel = getStructuringElement(MORPH_RECT, NOISE_REDUCTION_KERNEL_SIZE)
+        self.kernel = cv2.getStructuringElement(
+            cv2.MORPH_RECT, NOISE_REDUCTION_KERNEL_SIZE
+        )
 
     def start(self) -> None:
-        """
-        Description:
-            Starts video capture and detection thread.
-
-        Returns:
-            None
-        """
         if self.running:
             self.logger.warning("Detection already running.")
             return
         self.logger.info(f"Starting detection on source: {self.video_source}")
-        self.capture = VideoCapture(self.video_source)
-        print("Video source:", self.video_source)
-        if not self.capture.isOpened():
-            self.logger.error(f"Could not open video source {self.video_source}")
+        print(f"[start] Trying to open video: {self.video_source}")
+        print("[start] File exists:", exists(self.video_source))
+
+        if not exists(self.video_source):
+            print("[start] Video source does not exist")
             return
+
+        print("[start] Creating reader with imageio")
+        self.reader = iio.imiter(self.video_source)
+        print("[start] Reader created")
         self.running = True
+        self.frame_interval = 1.0 / 24
         self.thread = Thread(target=self._process_loop, daemon=True)
         self.thread.start()
+        print("[start] Detection thread started")
 
     def stop(self) -> None:
-        """
-        Description:
-            Stops detection and releases resources. Destroys OpenCV windows if debugging.
-
-        Returns:
-            None
-        """
         self.logger.info("Stopping detection.")
         self.running = False
         if self.thread is not None and current_thread() != self.thread:
             self.thread.join()
-        if self.capture is not None:
-            self.capture.release()
         if self.debug:
-            destroyWindow("Detection Debug View")
-            destroyWindow("Detection Mask")
+            cv2.destroyWindow("Detection Debug View")
+            cv2.destroyWindow("Detection Mask")
 
     def _process_loop(self) -> None:
-        """
-        Description:
-            Main detection loop. Reads frames, applies detection, and triggers callback on new Lego pieces.
-            Uses stateful logic to avoid duplicate triggers on the same part.
-
-        Returns:
-            None
-        """
-        sent_this_piece = False  # Only trigger once per piece
+        print("[_process_loop] Entered loop")
+        sent_this_piece = False
         no_piece_counter = 0
         NO_PIECE_FRAMES = MINIMUM_FRAMES_BETWEEN_PIECES
 
-        while self.running:
-            ret, frame = self.capture.read()
-            if not self.debug:
-                print(
-                    f"Detection.read: ret={ret}, frame={None if frame is None else frame.shape}"
-                )
-            if not ret:
-                self.logger.warning("Failed to read frame, stopping.")
-                break
-
-            original_frame = frame.copy()
-            processed_frame = self.preprocess(frame) if self.preprocess else frame
-            detection_frame = resize(processed_frame, self.det_shape)
-
-            detected, bbox = self.detect_lego(detection_frame)
-
-            # Show debug windows for mask and detection
-            fg_mask = self.bg_subtractor.apply(detection_frame)
-            mask = morphologyEx(fg_mask, MORPH_OPEN, self.kernel)
-
-            if self.debug:
-                debug_frame = detection_frame.copy()
-                if detected and bbox:
-                    x, y, w, h = bbox
-                    rectangle(debug_frame, (x, y), (x + w, y + h), CV_GREEN_COLOR, 2)
-                imshow("Detection Debug View", debug_frame)
-                imshow("Detection Mask", mask)
-                if waitKey(1) & 0xFF == ord("q"):
-                    self.logger.info("Quit by user in debug window.")
+        try:
+            for frame in self.reader:
+                print("[_process_loop] Got new frame")
+                if not self.running:
+                    print("[_process_loop] Stopped running, exiting loop")
                     break
+                frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                original_frame = frame.copy()
+                processed_frame = self.preprocess(frame) if self.preprocess else frame
+                detection_frame = cv2.resize(processed_frame, self.det_shape)
 
-            # Only trigger callback once per piece, when fully in FOV
-            if detected and bbox and not sent_this_piece:
-                self.logger.info("Lego piece detected (centered, will send crop).")
-                sent_this_piece = True
-                no_piece_counter = 0
+                detected, bbox = self.detect_lego(detection_frame)
+                print(f"[_process_loop] Detected: {detected}, BBox: {bbox}")
 
-                # Map bbox from detection_frame to original_frame
-                scale_x = original_frame.shape[1] / detection_frame.shape[1]
-                scale_y = original_frame.shape[0] / detection_frame.shape[0]
-                x, y, w, h = bbox
-                orig_bbox = (
-                    int(x * scale_x),
-                    int(y * scale_y),
-                    int(w * scale_x),
-                    int(h * scale_y),
-                )
-                # Generous crop using expand_bbox (margin=1.0 = 100% bigger)
-                x0, y0, w0, h0 = expand_bbox(
-                    *orig_bbox, original_frame.shape, margin=1.0
-                )
-                crop = original_frame[y0 : y0 + h0, x0 : x0 + w0]
-                if self.on_piece_detected:
-                    self.on_piece_detected(crop)
+                fg_mask = self.bg_subtractor.apply(detection_frame)
+                mask = cv2.morphologyEx(fg_mask, cv2.MORPH_OPEN, self.kernel)
 
-            elif not detected:
-                # Reset flag only after enough frames with no piece
-                if sent_this_piece:
-                    no_piece_counter += 1
-                    if no_piece_counter >= NO_PIECE_FRAMES:
-                        sent_this_piece = False
-                        no_piece_counter = 0
+                if self.debug:
+                    debug_frame = detection_frame.copy()
+                    if detected and bbox:
+                        x, y, w, h = bbox
+                        cv2.rectangle(
+                            debug_frame, (x, y), (x + w, y + h), CV_GREEN_COLOR, 2
+                        )
+                    cv2.imshow("Detection Debug View", debug_frame)
+                    cv2.imshow("Detection Mask", mask)
+                    if cv2.waitKey(1) & 0xFF == ord("q"):
+                        self.logger.info("Quit by user in debug window.")
+                        break
+
+                if detected and bbox and not sent_this_piece:
+                    print("[_process_loop] Lego piece centered — sending crop")
+                    sent_this_piece = True
+                    no_piece_counter = 0
+
+                    scale_x = original_frame.shape[1] / detection_frame.shape[1]
+                    scale_y = original_frame.shape[0] / detection_frame.shape[0]
+                    x, y, w, h = bbox
+                    orig_bbox = (
+                        int(x * scale_x),
+                        int(y * scale_y),
+                        int(w * scale_x),
+                        int(h * scale_y),
+                    )
+                    x0, y0, w0, h0 = expand_bbox(
+                        *orig_bbox, original_frame.shape, margin=1.0
+                    )
+                    crop = original_frame[y0 : y0 + h0, x0 : x0 + w0]
+                    if self.on_piece_detected:
+                        print("[_process_loop] Calling on_piece_detected")
+                        self.on_piece_detected(crop)
+
+                elif not detected:
+                    if sent_this_piece:
+                        no_piece_counter += 1
+                        if no_piece_counter >= NO_PIECE_FRAMES:
+                            sent_this_piece = False
+                            no_piece_counter = 0
+                time.sleep(self.frame_interval)
+        except Exception as e:
+            self.logger.error(f"Error reading video: {e}")
+            print(f"[_process_loop] Exception: {e}")
 
         self.logger.info("Exiting detection loop.")
+        print("[_process_loop] Exiting loop")
         self.stop()
 
     def detect_lego(
         self, frame: np.ndarray
     ) -> tuple[bool, tuple[int, int, int, int] | None]:
-        """
-        Description:
-            Detects presence of a Lego piece in the frame using background subtraction and contour filtering.
-
-        Parameters:
-            frame (np.ndarray): The detection-sized frame to analyze.
-
-        Returns:
-            detected (bool): True if a piece is detected and fully in view.
-            bbox (tuple[int, int, int, int] | None): Bounding box (x, y, w, h) if detected, else None.
-        """
         fg_mask = self.bg_subtractor.apply(frame)
-        mask = morphologyEx(fg_mask, MORPH_OPEN, self.kernel)
-        contours, _ = findContours(mask, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE)
+        mask = cv2.morphologyEx(fg_mask, cv2.MORPH_OPEN, self.kernel)
+        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         best_bbox = None
         best_area = 0
         for cnt in contours:
-            x, y, w, h = boundingRect(cnt)
+            x, y, w, h = cv2.boundingRect(cnt)
             area = w * h
             if area > self.area_thresh and area > best_area:
                 best_bbox = (x, y, w, h)
@@ -230,19 +181,96 @@ class Detection:
                 and x + w < width - self.margin
                 and y + h < height - self.margin
             ):
+                print("[detect_lego] Found valid bounding box")
                 return True, best_bbox
 
         return False, None
 
     def set_on_piece_detected(self, callback: callable) -> None:
+        self.on_piece_detected = callback
+
+    def handle_piece_detected(self, cropped_frame: np.ndarray):
+        print("[handle_piece_detected] Calling handle_detected_piece")
+        self.latest_result = handle_detected_piece(cropped_frame)
+        print("[handle_piece_detected] Result:", self.latest_result)
+
+
+# backend/sorting/detection_manager.py
+from threading import Event
+
+
+class DetectionManager:
+    """
+    Description:
+        Manages running Detection objects on a playlist of videos, looping infinitely until stopped.
+    """
+
+    def __init__(self, video_paths: list[str], detection_class, on_detected):
+        self.video_paths = video_paths
+        self.detection_class = detection_class
+        self.on_detected = on_detected
+        self._thread = None
+        self._stop_event = Event()
+        self.latest_result = None
+        self.current_video_idx = 0
+        self._custom_video_source = None
+        self._custom_callback = None
+
+    def start(self, video_source=None, on_piece_detected=None):
         """
         Description:
-            Sets the callback for when a Lego piece is detected.
-
+            Starts the detection loop, optionally with a video_source and a callback.
         Parameters:
-            callback (Callable[[np.ndarray], None]): Function to call with the cropped image.
-
-        Returns:
-            None
+            video_source (int|str|None): Override the video source for this run (otherwise uses playlist).
+            on_piece_detected (callable|None): Optional per-run callback.
         """
-        self.on_piece_detected = callback
+        self._custom_video_source = video_source
+        self._custom_callback = on_piece_detected
+        if self._thread and self._thread.is_alive():
+            return
+        self._stop_event.clear()
+        self._thread = Thread(target=self._run_loop, daemon=True)
+        self._thread.start()
+
+    def stop(self):
+        self._stop_event.set()
+        if self._thread:
+            self._thread.join(timeout=2)
+        self._thread = None
+
+    def _run_loop(self):
+        video_path = (
+            self._custom_video_source
+            if self._custom_video_source is not None
+            else self.video_paths[self.current_video_idx]
+        )
+        callback = (
+            self._custom_callback
+            if self._custom_callback is not None
+            else self.on_detected
+        )
+        self._run_detection_on_video(video_path, callback)
+        # After finishing, do NOT loop! Just stop.
+        self._custom_video_source = None
+        self._custom_callback = None
+
+    def _run_detection_on_video(self, video_path, callback):
+        from sorting.detection import Detection
+
+        def wrapped_callback(cropped_frame):
+            print("[DetectionManager] Running detection callback")
+            result = handle_detected_piece(cropped_frame)
+            self.latest_result = result
+            if callback:
+                callback(cropped_frame)  # Optional custom hook
+
+        det = Detection(
+            video_source=video_path, on_piece_detected=wrapped_callback, debug=False
+        )
+        det.start()
+        if det.thread is not None:
+            det.thread.join()
+            return "ok"
+        else:
+            print(f"[DetectionManager] Skipping video (failed to open): {video_path}")
+            return "failed_to_open"

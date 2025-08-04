@@ -1,0 +1,89 @@
+{
+  "name": "Green",
+  "bins": [
+    {
+      "category": "Plant",
+      "color": {
+        "name": "Green",
+        "hex": "#237841"
+      }
+    },
+    {
+      "category": "Brick",
+      "color": {
+        "name": "Green",
+        "hex": "#237841"
+      }
+    },
+    {
+      "category": "Brick",
+      "color": {
+        "name": "Light Green",
+        "hex": "#C2DAB8"
+      }
+    },
+    {
+      "category": "Slope, Curved",
+      "color": {
+        "name": "Green",
+        "hex": "#237841"
+      }
+    },
+    {
+      "category": "Plate, Curved",
+      "color": {
+        "name": "Green",
+        "hex": "#237841"
+      }
+    },
+    {
+      "category": "Tile, Round",
+      "color": {
+        "name": "Green",
+        "hex": "#237841"
+      }
+    },
+    {
+      "category": "Plate, Round",
+      "color": {
+        "name": "Light Green",
+        "hex": "#C2DAB8"
+      }
+    },
+    {
+      "category": "BIONICLE",
+      "color": {
+        "name": "Light Green",
+        "hex": "#C2DAB8"
+      }
+    },
+    {
+      "category": "Brick, Round, Decorated",
+      "color": {
+        "name": "Light Green",
+        "hex": "#C2DAB8"
+      }
+    },
+    {
+      "category": "Any",
+      "color": {
+        "name": "Green",
+        "hex": "#237841"
+      }
+    },
+    {
+      "category": "Any",
+      "color": {
+        "name": "Light Green",
+        "hex": "#C2DAB8"
+      }
+    },
+    {
+      "category": "Any",
+      "color": {
+        "name": "Any",
+        "hex": "#000000"
+      }
+    }
+  ]
+}

@@ -1,17 +1,89 @@
 {
   "name": "Classic",
   "bins": [
-    { "color": { "name": "Red", "hex": "#C91A09" }, "category": "Brick" },
-    { "color": { "name": "Blue", "hex": "#0055BF" }, "category": "Plate" },
-    { "color": { "name": "Yellow", "hex": "#F2CD37" }, "category": "Tile" },
-    { "color": { "name": "Green", "hex": "#237841" }, "category": "Slope" },
-    { "color": { "name": "White", "hex": "#FFFFFF" }, "category": "Brick" },
-    { "color": { "name": "Black", "hex": "#231F20" }, "category": "Technic" },
-    { "color": { "name": "Orange", "hex": "#F57F20" }, "category": "Brick" },
-    { "color": { "name": "Dark Blue", "hex": "#2032A0" }, "category": "Plate" },
-    { "color": { "name": "Tan", "hex": "#E4CD9E" }, "category": "Tile" },
-    { "color": { "name": "Purple", "hex": "#923978" }, "category": "Slope" },
-    { "color": { "name": "Lime", "hex": "#BBE90D" }, "category": "Technic" },
-    { "color": { "name": null, "hex": null }, "category": null }
+    {
+      "category": "Brick, Decorated",
+      "color": {
+        "name": "Red",
+        "hex": "#C91A09"
+      }
+    },
+    {
+      "category": "Plant",
+      "color": {
+        "name": "Green",
+        "hex": "#237841"
+      }
+    },
+    {
+      "category": "Tile",
+      "color": {
+        "name": "Yellow",
+        "hex": "#F2CD37"
+      }
+    },
+    {
+      "category": "Slope",
+      "color": {
+        "name": "Green",
+        "hex": "#237841"
+      }
+    },
+    {
+      "category": "Brick",
+      "color": {
+        "name": "White",
+        "hex": "#FFFFFF"
+      }
+    },
+    {
+      "category": "Technic",
+      "color": {
+        "name": "Black",
+        "hex": "#231F20"
+      }
+    },
+    {
+      "category": "Brick",
+      "color": {
+        "name": "Orange",
+        "hex": "#F57F20"
+      }
+    },
+    {
+      "category": "Plate",
+      "color": {
+        "name": "Dark Blue",
+        "hex": "#2032A0"
+      }
+    },
+    {
+      "category": "Tile",
+      "color": {
+        "name": "Tan",
+        "hex": "#E4CD9E"
+      }
+    },
+    {
+      "category": "Slope",
+      "color": {
+        "name": "Purple",
+        "hex": "#923978"
+      }
+    },
+    {
+      "category": "Technic",
+      "color": {
+        "name": "Lime",
+        "hex": "#BBE90D"
+      }
+    },
+    {
+      "category": "Any",
+      "color": {
+        "name": "Any",
+        "hex": "#000000"
+      }
+    }
   ]
 }

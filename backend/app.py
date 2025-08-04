@@ -5,7 +5,7 @@ from apis.recipes_api import recipes_bp, colors_bp
 from sorting.detection import Detection, DetectionManager
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 TEST_VIDEO_DIR = "/app/tests/test_videos"
 import os
@@ -36,4 +36,4 @@ app.register_blueprint(recipes_bp)
 app.register_blueprint(colors_bp)
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5001, debug=True)
+    app.run(host="0.0.0.0", port=5001, debug=True, threaded=True)

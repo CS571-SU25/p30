@@ -16,6 +16,7 @@ from constants.general import (
     MOG2_SUBTRACTOR_VARIANCE_THRESHOLD,
     NOISE_REDUCTION_KERNEL_SIZE,
 )
+from apis.detection_api import notify_clients
 from util.vision import (
     expand_bbox,
     handle_detected_piece,
@@ -69,7 +70,7 @@ class Detection:
         self.reader = iio.imiter(self.video_source)
         print("[start] Reader created")
         self.running = True
-        self.frame_interval = 1.0 / 24
+        self.frame_interval = 1.0 / 30
         self.thread = Thread(target=self._process_loop, daemon=True)
         self.thread.start()
         print("[start] Detection thread started")
@@ -91,7 +92,7 @@ class Detection:
 
         try:
             for frame in self.reader:
-                print("[_process_loop] Got new frame")
+                # print("[_process_loop] Got new frame")
                 if not self.running:
                     print("[_process_loop] Stopped running, exiting loop")
                     break
@@ -155,6 +156,7 @@ class Detection:
         self.logger.info("Exiting detection loop.")
         print("[_process_loop] Exiting loop")
         self.stop()
+        self.latest_result = None
 
     def detect_lego(
         self, frame: np.ndarray
@@ -250,7 +252,6 @@ class DetectionManager:
             else self.on_detected
         )
         self._run_detection_on_video(video_path, callback)
-        # After finishing, do NOT loop! Just stop.
         self._custom_video_source = None
         self._custom_callback = None
 
@@ -261,8 +262,10 @@ class DetectionManager:
             print("[DetectionManager] Running detection callback")
             result = handle_detected_piece(cropped_frame)
             self.latest_result = result
+            notify_clients(self.latest_result)
+
             if callback:
-                callback(cropped_frame)  # Optional custom hook
+                callback(cropped_frame)
 
         det = Detection(
             video_source=video_path, on_piece_detected=wrapped_callback, debug=False

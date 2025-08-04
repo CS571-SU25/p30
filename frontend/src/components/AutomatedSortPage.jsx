@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
@@ -15,80 +15,114 @@ export default function AutomatedSortPage({ sortedParts, setSortedParts }) {
   const [selectedRecipe, setSelectedRecipe] = usePersistentState('auto_selectedRecipe', null);
   const [binsData, setBinsData] = usePersistentState('auto_binsData', Array(12).fill({ color: null, category: null }));
   const [isSorting, setIsSorting] = usePersistentState('auto_isSorting', false);
-  const [latestImageUrl, setLatestImageUrl] = usePersistentState('auto_latestImageUrl', null);
-  const [latestPartInfo, setLatestPartInfo] = usePersistentState('auto_latestPartInfo', null);
-  const [error, setError] = usePersistentState('auto_error', null);
 
-  const pollingIntervalRef = useRef(null);
+  const [latestImageUrl, setLatestImageUrl] = useState(null); 
+  const [latestPartInfo, setLatestPartInfo] = useState(null); 
+  const [error, setError] = useState(null);
+
+  // Debug render
+  console.log("Rendering - isSorting:", isSorting, "latestPartInfo:", latestPartInfo);
 
   useEffect(() => {
     fetch('/api/recipes/')
       .then(res => res.json())
-      .then(names => setRecipeNames(names))
-      .catch(() => setRecipeNames([]));
+      .then(names => {
+        console.log("Recipe names fetched:", names);
+        setRecipeNames(names);
+      })
+      .catch(err => {
+        console.error("Failed to fetch recipes", err);
+        setRecipeNames([]);
+      });
   }, []);
 
   useEffect(() => {
     if (selectedRecipe) {
+      console.log("Fetching recipe:", selectedRecipe);
       fetch(`/api/recipes/${selectedRecipe}`)
         .then(res => res.json())
-        .then(data => setBinsData(data.bins || Array(12).fill({ color: null, category: null })))
-        .catch(() => setBinsData(Array(12).fill({ color: null, category: null })));
+        .then(data => {
+          console.log("Recipe loaded:", data);
+          setBinsData(data.bins || Array(12).fill({ color: null, category: null }));
+        })
+        .catch(err => {
+          console.error("Failed to load recipe bins:", err);
+          setBinsData(Array(12).fill({ color: null, category: null }));
+        });
     } else {
+      console.log("No recipe selected. Resetting bins.");
       setBinsData(Array(12).fill({ color: null, category: null }));
     }
   }, [selectedRecipe]);
 
   useEffect(() => {
-    if (isSorting) {
-      pollingIntervalRef.current = setInterval(() => {
-        fetch('/api/detection/latest')
-          .then(res => res.status === 204 ? null : res.json())
-          .then(data => {
-            if (!data) return;
-
-            console.log("📸 Raw detection result:", data);
-
-            setLatestImageUrl(data.image_url || null);
-
-            const part = data.part_info?.items?.[0];
-            if (!part) {
-              console.warn("⚠️ No part found in items array");
-              setLatestPartInfo(null);
-              return;
-            }
-
-            const parsedPart = {
-              id: part.id,
-              name: part.name,
-              category: part.category,
-              confidence: part.score ? Math.round(part.score) : null,
-              img_url: part.img_url ?? null,
-              img_base64: data.part_info?.img_base64 ?? null,
-              bricklink_url: part.external_sites?.[0]?.url ?? null,
-              lego_color: data.part_info?.lego_color ?? "Unknown",
-              lego_color_id: data.part_info?.lego_color_id ?? -1,
-              lego_color_rgb: data.part_info?.lego_color_rgb ?? [0, 0, 0],
-              hex: data.part_info?.hex ?? "#ccc",
-            };
-
-            setLatestPartInfo(parsedPart);
-            setSortedParts(prev => [...prev, parsedPart]);
-            setError(null);
-          })
-          .catch(() => setError("Failed to fetch detection data."));
-      }, 2000);
-    } else {
-      clearInterval(pollingIntervalRef.current);
-      setLatestImageUrl(null);
-      setLatestPartInfo(null);
+    if (!isSorting) {
+      console.log("Sorting stopped. SSE not connected.");
+      return;
     }
 
-    return () => clearInterval(pollingIntervalRef.current);
+    console.log("Connecting to SSE stream...");
+    const eventSource = new EventSource('/api/detection/stream');
+
+eventSource.onmessage = (e) => {
+  try {
+    const data = JSON.parse(e.data);
+    console.log("SSE received:", data);
+
+    setError(null);
+    setLatestImageUrl(data.image_url || null);
+    console.log("Raw items from data.items:", data.items);
+
+    if (!Array.isArray(data.items) || data.items.length === 0) {
+      console.warn("SSE message received, but no items present");
+      return;
+    }
+
+    const part = data.items[0];
+
+    const parsedPart = {
+      id: part.id,
+      name: part.name,
+      category: part.category,
+      confidence: part.score !== undefined ? Math.round(part.score * 100) : null,
+      img_url: part.img_url ?? null,
+      img_base64: data.img_base64 ?? null,
+      bricklink_url: part.external_sites?.[0]?.url ?? null,
+      lego_color: data.lego_color ?? "Unknown",
+      lego_color_id: data.lego_color_id ?? -1,
+      lego_color_rgb: data.lego_color_rgb ?? [0, 0, 0],
+      hex: data.hex ?? "#ccc",
+    };
+
+    console.log("Parsed part:", parsedPart);
+
+    setLatestPartInfo(parsedPart);
+    setSortedParts(prev => [...prev, parsedPart]);
+
+  } catch (err) {
+    console.error("Error parsing SSE data:", err);
+  }
+};
+
+    eventSource.onerror = (err) => {
+      console.warn("SSE warning (non-fatal):", err);
+      setError("Warning: temporary connection issue with detection stream.");
+    };
+
+    return () => {
+      console.log("SSE disconnected.");
+      eventSource.close();
+      setLatestImageUrl(null);
+      setLatestPartInfo(null);
+    };
   }, [isSorting]);
 
   const handleStart = () => {
-    if (!selectedRecipe) return;
+    if (!selectedRecipe) {
+      console.warn("Cannot start sorting: no recipe selected.");
+      return;
+    }
+    console.log("Starting sorting...");
     fetch('/api/detection/start', {
       method: 'POST',
       headers: { "Content-Type": "application/json" },
@@ -96,10 +130,13 @@ export default function AutomatedSortPage({ sortedParts, setSortedParts }) {
         recipe: selectedRecipe,
         video_source: "/app/tests/test_videos/test_video_1.mp4"
       }),
-    }).then(() => setIsSorting(true));
+    }).then(() => {
+      setIsSorting(true);
+    });
   };
 
   const handleStop = () => {
+    console.log("Stopping sorting...");
     fetch('/api/detection/stop', { method: 'POST' }).then(() => setIsSorting(false));
   };
 
@@ -109,9 +146,9 @@ export default function AutomatedSortPage({ sortedParts, setSortedParts }) {
         <Container fluid>
           <Navbar.Brand as="h1" className="fs-3 mb-0">Automated Sorter</Navbar.Brand>
           <Nav className="ms-auto align-items-center">
-            <Dropdown onSelect={setSelectedRecipe}>
+            <Dropdown onSelect={(val) => { console.log("Recipe selected:", val); setSelectedRecipe(val); }}>
               <Dropdown.Toggle variant="outline-dark" id="dropdown-sort-method">
-                {selectedRecipe ? selectedRecipe : "Select Sort Recipe"}
+                {selectedRecipe || "Select Sort Recipe"}
               </Dropdown.Toggle>
               <Dropdown.Menu>
                 {recipeNames.length === 0 ? (
@@ -134,12 +171,10 @@ export default function AutomatedSortPage({ sortedParts, setSortedParts }) {
       </Navbar>
 
       <Row className="g-4">
-        {/* LEFT: Bins */}
         <Col md={4} sm={12}>
           <BinsVisualizer bins={binsData} />
         </Col>
 
-        {/* MIDDLE: Image */}
         <Col md={4} sm={12}>
           <section aria-labelledby="current-image-heading" className="bg-light border rounded p-3 h-100">
             <h2 id="current-image-heading" className="fs-4">Current Image</h2>
@@ -172,7 +207,6 @@ export default function AutomatedSortPage({ sortedParts, setSortedParts }) {
           </section>
         </Col>
 
-        {/* RIGHT: Info */}
         <Col md={4} sm={12}>
           <section aria-labelledby="current-part-heading" className="bg-light border rounded p-3 h-100">
             <h2 id="current-part-heading" className="fs-4">Current Part Info</h2>

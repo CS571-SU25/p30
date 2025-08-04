@@ -5,6 +5,8 @@ import { Nav } from "react-bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 import legoBrick from "../assets/lego_brick.png"
 import AutomatedSortPage from "./AutomatedSortPage";
+import RecipeBuilderPage from "./RecipeBuilderPage";
+
 
 export default function App() {
   const [page, setPage] = useState("sort");
@@ -76,6 +78,16 @@ export default function App() {
               </Nav.Link>
             </Nav.Item>
             <Nav.Item>
+            <Nav.Link
+                as="button"
+                className={`text-white fs-5 ${page === "recipe" ? "fw-bold text-warning" : ""}`}
+                style={{ background: "none", border: "none", textAlign: "left" }}
+                onClick={() => setPage("recipe")}
+            >
+                Recipe Builder
+            </Nav.Link>
+            </Nav.Item>
+            <Nav.Item>
               <Nav.Link
                 as="button"
                 className={`text-white fs-5 ${page === "stats" ? "fw-bold text-warning" : ""}`}
@@ -85,26 +97,29 @@ export default function App() {
                 Stats
               </Nav.Link>
             </Nav.Item>
+            
           </Nav>
         </div>
       </div>
       {/* Main Content */}
-      <div style={{ flex: 1, minHeight: 0, display: "flex", width: "100vw" }}>
+        <div style={{ flex: 1, minHeight: 0, display: "flex", width: "100vw" }}>
         {page === "sort" ? (
-          <SortPage
+            <SortPage
             sortedParts={sortedParts}
             setSortedParts={setSortedParts}
             capturedImage={capturedImage}
             setCapturedImage={setCapturedImage}
             lastPartData={lastPartData}
             setLastPartData={setLastPartData}
-          />
+            />
         ) : page === "auto" ? (
-          <AutomatedSortPage />
+            <AutomatedSortPage />
+        ) : page === "recipe" ? (
+            <RecipeBuilderPage />
         ) : (
-          <StatsPage sortedParts={sortedParts} />
+            <StatsPage sortedParts={sortedParts} />
         )}
-      </div>
+        </div>
     </div>
   );
 }

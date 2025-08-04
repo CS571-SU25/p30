@@ -1,5 +1,5 @@
 import numpy as np
-from constants.colors import LEGO_COLORS
+from constants.brick_info import LEGO_COLORS
 from cv2 import imencode
 from base64 import b64encode
 from requests import post

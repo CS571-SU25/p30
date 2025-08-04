@@ -1,7 +1,7 @@
 from flask import Flask
 from flask_cors import CORS
 from apis.detection_api import detection_api
-from apis.recipes_api import recipes_bp
+from apis.recipes_api import recipes_bp, colors_bp
 from sorting.detection import Detection, DetectionManager
 
 app = Flask(__name__)
@@ -31,6 +31,9 @@ app.register_blueprint(detection_api)
 
 # Recipes
 app.register_blueprint(recipes_bp)
+
+# Colors for recipe building
+app.register_blueprint(colors_bp)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001, debug=True)

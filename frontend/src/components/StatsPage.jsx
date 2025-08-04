@@ -1,11 +1,54 @@
 import React from "react";
-import { Card, Table, Image } from "react-bootstrap";
+import { Card, Table, Image, Button } from "react-bootstrap";
+import { saveAs } from "file-saver";
 
-export default function StatsPage({ sortedParts }) {
+export default function StatsPage({ sortedParts, setSortedParts }) {
+
+  const handleClearStats = () => {
+    if (window.confirm("Are you sure you want to clear the stats? This cannot be undone.")) {
+      setSortedParts([]);
+    }
+  };
+
+  const handleDownloadCSV = () => {
+    if (!sortedParts.length) return;
+
+    const headers = [
+      "Name", "Color HEX", "LEGO Color", "Category", "Part Number",
+      "Confidence", "Bricklink URL", "Image URL"
+    ];
+
+    const rows = sortedParts.map(part => [
+      part.name || "",
+      part.hex || "",
+      `${part.lego_color || ""} (ID: ${part.lego_color_id || ""})`,
+      part.category || "",
+      part.id || "",
+      `${Math.round(part.confidence * 100)}%`,
+      part.bricklink_url || "",
+      part.img_url || ""
+    ]);
+
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(field => `"${(field ?? "").toString().replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
+    saveAs(blob, "sorted_parts.csv");
+  };
+
   return (
     <Card className="w-100 h-100">
-      <Card.Header className="text-center">
+      <Card.Header className="text-center d-flex justify-content-between align-items-center">
         <strong>Parts Sorted This Session</strong>
+        <div className="d-flex gap-2">
+          <Button variant="outline-secondary" onClick={handleClearStats}>
+            Clear Stats
+          </Button>
+          <Button variant="outline-primary" onClick={handleDownloadCSV} disabled={sortedParts.length === 0}>
+            Save to CSV
+          </Button>
+        </div>
       </Card.Header>
       <Card.Body>
         {(!sortedParts || sortedParts.length === 0) ? (
@@ -28,13 +71,27 @@ export default function StatsPage({ sortedParts }) {
             <tbody>
               {sortedParts.map((part, idx) => (
                 <tr key={idx}>
-                <td>{idx + 1}</td>
-                <td>
-                    {part.img_url && (
-                      <Image src={part.img_url} rounded style={{ maxHeight: 50 }} />
+                  <td>{idx + 1}</td>
+                  <td>
+                    {part.img_base64 ? (
+                      <Image
+                        src={`data:image/jpeg;base64,${part.img_base64}`}
+                        rounded
+                        style={{ maxHeight: 50 }}
+                        alt="Detected part"
+                      />
+                    ) : part.img_url ? (
+                      <Image
+                        src={part.img_url}
+                        rounded
+                        style={{ maxHeight: 50 }}
+                        alt="Detected part"
+                      />
+                    ) : (
+                      <span className="text-muted">N/A</span>
                     )}
                   </td>
-                <td>{part.name}</td>
+                  <td>{part.name || <span className="text-muted">N/A</span>}</td>
                   <td>
                     <span
                       style={{
@@ -44,22 +101,19 @@ export default function StatsPage({ sortedParts }) {
                         height: 28,
                         border: "1px solid #333",
                         borderRadius: "50%",
-                        verticalAlign: "middle",
-                        horizontalAlign: "middle",
                       }}
                       title={part.lego_color}
                     />
                   </td>
-                <td>
-                    {part.lego_color} (ID: {part.lego_color_id})<br/>
+                  <td>
+                    {part.lego_color} (ID: {part.lego_color_id})<br />
                     RGB: [{part.lego_color_rgb?.join(", ")}]
                   </td>
-                <td>{part.category}</td>
+                  <td>{part.category}</td>
                   <td>{part.id}</td>
                   <td>{Math.round(part.confidence * 100)}%</td>
-
                   <td>
-                    {part.bricklink_url && (
+                    {part.bricklink_url ? (
                       <a
                         href={part.bricklink_url}
                         target="_blank"
@@ -68,6 +122,8 @@ export default function StatsPage({ sortedParts }) {
                       >
                         Bricklink
                       </a>
+                    ) : (
+                      <span className="text-muted">N/A</span>
                     )}
                   </td>
                 </tr>

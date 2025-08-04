@@ -10,15 +10,15 @@ import BinsVisualizer from "./BinsVisualizer";
 import PartInfo from "./PartInfo";
 import usePersistentState from './hooks/usePersistentState';
 
-export default function AutomatedSortPage() {
+export default function AutomatedSortPage({ sortedParts, setSortedParts }) {
   const [recipeNames, setRecipeNames] = usePersistentState('auto_recipeNames', []);
   const [selectedRecipe, setSelectedRecipe] = usePersistentState('auto_selectedRecipe', null);
   const [binsData, setBinsData] = usePersistentState('auto_binsData', Array(12).fill({ color: null, category: null }));
-
   const [isSorting, setIsSorting] = usePersistentState('auto_isSorting', false);
   const [latestImageUrl, setLatestImageUrl] = usePersistentState('auto_latestImageUrl', null);
   const [latestPartInfo, setLatestPartInfo] = usePersistentState('auto_latestPartInfo', null);
   const [error, setError] = usePersistentState('auto_error', null);
+
   const pollingIntervalRef = useRef(null);
 
   useEffect(() => {
@@ -43,36 +43,38 @@ export default function AutomatedSortPage() {
     if (isSorting) {
       pollingIntervalRef.current = setInterval(() => {
         fetch('/api/detection/latest')
-          .then(res => {
-            if (res.status === 204) return null;
-            return res.json();
-          })
+          .then(res => res.status === 204 ? null : res.json())
           .then(data => {
-            if (data) {
-              console.log("📸 Raw detection result:", data);
+            if (!data) return;
 
-              setLatestImageUrl(data.image_url || null);
+            console.log("📸 Raw detection result:", data);
 
-              const part = data.part_info?.items?.[0];
-              if (!part) {
-                console.warn("⚠️ No part found in items array");
-                setLatestPartInfo(null);
-                return;
-              }
+            setLatestImageUrl(data.image_url || null);
 
-              const parsedPart = {
-                ...part,
-                confidence: part.score ? Math.round(part.score * 100) : null,
-                img_url: part.img_url,
-                img_base64: data.part_info?.img_base64 ?? null,
-                lego_color: data.part_info?.lego_color ?? "Unknown",
-                lego_color_id: data.part_info?.lego_color_id ?? -1,
-                lego_color_rgb: data.part_info?.lego_color_rgb ?? [0, 0, 0]
-              };
-
-              setLatestPartInfo(parsedPart);
-              setError(null);
+            const part = data.part_info?.items?.[0];
+            if (!part) {
+              console.warn("⚠️ No part found in items array");
+              setLatestPartInfo(null);
+              return;
             }
+
+            const parsedPart = {
+              id: part.id,
+              name: part.name,
+              category: part.category,
+              confidence: part.score ? Math.round(part.score) : null,
+              img_url: part.img_url ?? null,
+              img_base64: data.part_info?.img_base64 ?? null,
+              bricklink_url: part.external_sites?.[0]?.url ?? null,
+              lego_color: data.part_info?.lego_color ?? "Unknown",
+              lego_color_id: data.part_info?.lego_color_id ?? -1,
+              lego_color_rgb: data.part_info?.lego_color_rgb ?? [0, 0, 0],
+              hex: data.part_info?.hex ?? "#ccc",
+            };
+
+            setLatestPartInfo(parsedPart);
+            setSortedParts(prev => [...prev, parsedPart]);
+            setError(null);
           })
           .catch(() => setError("Failed to fetch detection data."));
       }, 2000);
@@ -132,10 +134,12 @@ export default function AutomatedSortPage() {
       </Navbar>
 
       <Row className="g-4">
+        {/* LEFT: Bins */}
         <Col md={4} sm={12}>
           <BinsVisualizer bins={binsData} />
         </Col>
 
+        {/* MIDDLE: Image */}
         <Col md={4} sm={12}>
           <section aria-labelledby="current-image-heading" className="bg-light border rounded p-3 h-100">
             <h2 id="current-image-heading" className="fs-4">Current Image</h2>
@@ -151,7 +155,7 @@ export default function AutomatedSortPage() {
               }}
               aria-label="Image placeholder"
             >
-              {latestImageUrl || latestPartInfo?.img_base64 ? (
+              {latestPartInfo?.img_base64 || latestImageUrl ? (
                 <img
                   src={
                     latestPartInfo?.img_base64
@@ -168,6 +172,7 @@ export default function AutomatedSortPage() {
           </section>
         </Col>
 
+        {/* RIGHT: Info */}
         <Col md={4} sm={12}>
           <section aria-labelledby="current-part-heading" className="bg-light border rounded p-3 h-100">
             <h2 id="current-part-heading" className="fs-4">Current Part Info</h2>

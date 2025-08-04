@@ -7,7 +7,6 @@ import legoBrick from "../assets/lego_brick.png"
 import AutomatedSortPage from "./AutomatedSortPage";
 import RecipeBuilderPage from "./RecipeBuilderPage";
 
-
 export default function App() {
   const [page, setPage] = useState("sort");
   const [sortedParts, setSortedParts] = useState([]);
@@ -17,11 +16,11 @@ export default function App() {
   return (
     <div style={{ minHeight: "100vh", background: "#f8f9fa", display: "flex", flexDirection: "column" }}>
       {/* Header */}
-        <div className="w-100 bg-dark py-4">
+      <div className="w-100 bg-dark py-4">
         <div className="container-fluid px-4">
-            <div className="d-flex align-items-center">
+          <div className="d-flex align-items-center">
             <button
-                style={{
+              style={{
                 border: "none",
                 background: "none",
                 padding: 0,
@@ -29,30 +28,30 @@ export default function App() {
                 display: "flex",
                 alignItems: "center",
                 cursor: "pointer",
-                }}
-                aria-label="Go to Sort Page"
-                onClick={() => setPage("sort")}
+              }}
+              aria-label="Go to Sort Page"
+              onClick={() => setPage("sort")}
             >
-                <img
+              <img
                 src={legoBrick} 
                 alt="Stud Sorter logo"
                 style={{ height: "56px", width: "56px", objectFit: "contain" }}
-                />
+              />
             </button>
             <h1
-                className="text-white display-3 m-0"
-                style={{
+              className="text-white display-3 m-0"
+              style={{
                 textAlign: "left",
                 color: "#FFFFFF",
                 userSelect: "none",
                 lineHeight: "56px",
-                }}
+              }}
             >
-                Stud Sorter
+              Stud Sorter
             </h1>
-            </div>
+          </div>
         </div>
-        </div>
+      </div>
       {/* Navigation */}
       <div className="w-100 bg-secondary">
         <div className="container-fluid px-4">
@@ -78,14 +77,14 @@ export default function App() {
               </Nav.Link>
             </Nav.Item>
             <Nav.Item>
-            <Nav.Link
+              <Nav.Link
                 as="button"
                 className={`text-white fs-5 ${page === "recipe" ? "fw-bold text-warning" : ""}`}
                 style={{ background: "none", border: "none", textAlign: "left" }}
                 onClick={() => setPage("recipe")}
-            >
+              >
                 Recipe Builder
-            </Nav.Link>
+              </Nav.Link>
             </Nav.Item>
             <Nav.Item>
               <Nav.Link
@@ -97,29 +96,35 @@ export default function App() {
                 Stats
               </Nav.Link>
             </Nav.Item>
-            
           </Nav>
         </div>
       </div>
       {/* Main Content */}
-        <div style={{ flex: 1, minHeight: 0, display: "flex", width: "100vw" }}>
+      <div style={{ flex: 1, minHeight: 0, display: "flex", width: "100vw" }}>
         {page === "sort" ? (
-            <SortPage
+          <SortPage
             sortedParts={sortedParts}
             setSortedParts={setSortedParts}
             capturedImage={capturedImage}
             setCapturedImage={setCapturedImage}
             lastPartData={lastPartData}
             setLastPartData={setLastPartData}
-            />
+          />
         ) : page === "auto" ? (
-            <AutomatedSortPage />
+          <AutomatedSortPage
+            sortedParts={sortedParts}
+            setSortedParts={setSortedParts}
+            capturedImage={capturedImage}
+            setCapturedImage={setCapturedImage}
+            lastPartData={lastPartData}
+            setLastPartData={setLastPartData}
+          />
         ) : page === "recipe" ? (
-            <RecipeBuilderPage />
+          <RecipeBuilderPage />
         ) : (
-            <StatsPage sortedParts={sortedParts} />
+          <StatsPage sortedParts={sortedParts} setSortedParts={setSortedParts} />
         )}
-        </div>
+      </div>
     </div>
   );
 }

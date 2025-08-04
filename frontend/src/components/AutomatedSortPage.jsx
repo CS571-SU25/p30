@@ -84,7 +84,7 @@ eventSource.onmessage = (e) => {
       id: part.id,
       name: part.name,
       category: part.category,
-      confidence: part.score !== undefined ? Math.round(part.score * 100) : null,
+      confidence: part.score !== undefined ? part.score : null,
       img_url: part.img_url ?? null,
       img_base64: data.img_base64 ?? null,
       bricklink_url: part.external_sites?.[0]?.url ?? null,

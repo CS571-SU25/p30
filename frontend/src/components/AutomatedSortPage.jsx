@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
@@ -8,16 +8,17 @@ import Dropdown from 'react-bootstrap/Dropdown';
 import Button from 'react-bootstrap/Button';
 import BinsVisualizer from "./BinsVisualizer";
 import PartInfo from "./PartInfo";
+import usePersistentState from './hooks/usePersistentState';
 
 export default function AutomatedSortPage() {
-  const [recipeNames, setRecipeNames] = useState([]);
-  const [selectedRecipe, setSelectedRecipe] = useState(null);
-  const [binsData, setBinsData] = useState(Array(12).fill({ color: null, category: null }));
+  const [recipeNames, setRecipeNames] = usePersistentState('auto_recipeNames', []);
+  const [selectedRecipe, setSelectedRecipe] = usePersistentState('auto_selectedRecipe', null);
+  const [binsData, setBinsData] = usePersistentState('auto_binsData', Array(12).fill({ color: null, category: null }));
 
-  const [isSorting, setIsSorting] = useState(false);
-  const [latestImageUrl, setLatestImageUrl] = useState(null);
-  const [latestPartInfo, setLatestPartInfo] = useState(null);
-  const [error, setError] = useState(null);
+  const [isSorting, setIsSorting] = usePersistentState('auto_isSorting', false);
+  const [latestImageUrl, setLatestImageUrl] = usePersistentState('auto_latestImageUrl', null);
+  const [latestPartInfo, setLatestPartInfo] = usePersistentState('auto_latestPartInfo', null);
+  const [error, setError] = usePersistentState('auto_error', null);
   const pollingIntervalRef = useRef(null);
 
   useEffect(() => {
